@@ -176,14 +176,7 @@ class TestQuestionODB extends React.Component<Props, State> {
         });
       } else {
         console.log('Has Only 1 item, and possible No Fault');
-        await this.setState({
-          selectedValueArr: [
-            {
-              id: NO_FAULT,
-              value: NO_FAULT,
-            },
-          ],
-        });
+        hasError = true;
       }
 
       if (hasError) {
@@ -191,7 +184,7 @@ class TestQuestionODB extends React.Component<Props, State> {
       } else {
         const score =
           this.state.selectedValueArr.length === 1 &&
-          this.state.selectedValueArr[0].value === NO_FAULT
+          this.state.selectedValueArr[0].name === NO_FAULT
             ? this.props.questionData.question.score
             : 0;
         this.props.onAnswer(

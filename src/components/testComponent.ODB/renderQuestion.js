@@ -1,12 +1,19 @@
 // @flow
 
 import * as React from 'react';
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  LogBox,
+} from 'react-native';
 import Text from '../Text';
 import Theme from '../../App.style';
 import styles from './style';
 import Icon from '../Icons';
 import {Picker} from '@react-native-picker/picker';
+import SearchableDropdown from 'react-native-searchable-dropdown';
 
 type Props = {
   questionData: Object,
@@ -32,17 +39,28 @@ class RenderQuestion extends React.Component<Props, State> {
       selectedValueArr: [],
       enabled: false,
       disabled: false,
+      dropdownItems: [],
+      viewKey: 0,
     };
   }
 
   componentDidMount: function = () => {
+    LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
+    const items = this.props.questionData.question.odbMessages.map((item) => {
+      return {
+        id: item.id,
+        name: item.title + ' - ' + item.description,
+      };
+    });
     this.setState({
       selectedValueArr: this.props.selectedValueArr,
       enabled: !this.props.paused,
+      dropdownItems: items,
     });
+
     if (
       this.props.selectedValueArr.length === 1 &&
-      (this.props.selectedValueArr[0].value === NO_FAULT ||
+      (this.props.selectedValueArr[0].name === NO_FAULT ||
         this.props.selectedValueArr[0] === 0)
     ) {
       this.setState({
@@ -55,19 +73,19 @@ class RenderQuestion extends React.Component<Props, State> {
     }
   };
 
-  componentDidUpdate: function = async (prevProp, prevState) => {
+  componentDidUpdate: function = (prevProp, prevState) => {
     if (
       JSON.stringify(prevProp.selectedValueArr) !==
       JSON.stringify(this.props.selectedValueArr)
     ) {
-      await this.setState({
+      this.setState({
         selectedValueArr: this.props.selectedValueArr,
       });
       if (
         this.props.selectedValueArr.length === 1 &&
-        this.props.selectedValueArr[0].value === NO_FAULT
+        this.props.selectedValueArr[0].name === NO_FAULT
       ) {
-        await this.setState({
+        this.setState({
           disabled: true,
           enabled: !this.props.paused,
         });
@@ -77,13 +95,16 @@ class RenderQuestion extends React.Component<Props, State> {
           disabled: this.props.paused,
         });
       }
+      this.setState({
+        viewKey: this.state.viewKey + 1,
+      });
     }
     if (this.props.paused !== prevProp.paused) {
       if (
         this.props.selectedValueArr.length === 1 &&
-        this.props.selectedValueArr[0].value === NO_FAULT
+        this.props.selectedValueArr[0].name === NO_FAULT
       ) {
-        await this.setState({
+        this.setState({
           disabled: true,
           enabled: !this.props.paused,
         });
@@ -97,37 +118,29 @@ class RenderQuestion extends React.Component<Props, State> {
   };
 
   handleOptionSelection: function = async (
-    itemValue,
-    itemIndex,
+    itemName,
+    itemId,
     dropDownNumber,
   ) => {
-    const index = itemIndex - 1;
     const arr = [...this.state.selectedValueArr];
+    arr[dropDownNumber] = {
+      id: itemId,
+      name: itemName,
+    };
 
-    if (index >= 0) {
-      arr[dropDownNumber] = {
-        id: itemValue,
-        value: this.props.questionData.question.odbMessages.find(
-          (obj) => obj.id === itemValue,
-        ).title,
-      };
-    } else {
-      if (itemValue === NO_FAULT) {
-        arr.length = 1;
-        arr[0] = {
-          id: NO_FAULT,
-          value: NO_FAULT,
-        };
-        await this.setState({
-          disabled: true,
-        });
-      } else {
+    if (itemId !== NO_FAULT) {
+      if (this.state.disabled === true) {
         await this.setState({
           disabled: false,
         });
-        arr[dropDownNumber] = 0;
       }
+    } else {
+      arr.length = 1;
+      await this.setState({
+        disabled: true,
+      });
     }
+
     await this.props.onSelection(arr);
     await this.setState({
       selectedValueArr: arr,
@@ -168,7 +181,7 @@ class RenderQuestion extends React.Component<Props, State> {
             </Text>
           </View>
 
-          <View style={styles.questionBox}>
+          <View style={[styles.questionBox, {}]}>
             {/* Instructions */}
             <View style={[localStyle.questionRow, {paddingTop: 5}]}>
               <View style={localStyle.iconHolder}>
@@ -229,40 +242,58 @@ class RenderQuestion extends React.Component<Props, State> {
                 this.state.selectedValueArr.map((v, i) => (
                   <>
                     <View style={[localStyle.selectBlock, {marginRight: -50}]}>
-                      {/* <View style={{paddingBottom: 5}}>
-                        <Text size={1} style={{color: Theme.base_color_10}}>
-                          {this.props.questionData.question.label}
-                        </Text>
-                      </View> */}
-                      <View style={localStyle.selectContainer}>
-                        <Picker
-                          enabled={this.state.enabled}
-                          selectedValue={this.state.selectedValueArr[i].id}
-                          style={localStyle.select}
-                          // prompt="Options"
-                          onValueChange={(itemValue, itemIndex) => {
-                            this.handleOptionSelection(itemValue, itemIndex, i);
-                          }}>
-                          {i === 0 ? (
-                            <Picker.Item label={NO_FAULT} value={NO_FAULT} />
-                          ) : (
-                            <Picker.Item
-                              label={
-                                'Select ' +
-                                this.props.questionData.question.label
-                              }
-                              value={UNSELECTABLE}
-                            />
-                          )}
-                          {this.props.questionData.question.odbMessages.map(
-                            (item, j) => (
-                              <Picker.Item
-                                label={item.title + ' - ' + item.description}
-                                value={item.id}
-                              />
-                            ),
-                          )}
-                        </Picker>
+                      <View
+                        key={this.state.viewKey}
+                        style={localStyle.selectContainer}>
+                        <SearchableDropdown
+                          items={
+                            i === 0
+                              ? [
+                                  {id: NO_FAULT, name: NO_FAULT},
+                                  ...this.state.dropdownItems,
+                                ]
+                              : this.state.dropdownItems
+                          }
+                          onItemSelect={(item) => {
+                            this.handleOptionSelection(item.name, item.id, i);
+                          }}
+                          selectedItems={
+                            this.state.selectedValueArr[i] !== 0
+                              ? this.state.selectedValueArr[i]
+                              : []
+                          }
+                          containerStyle={{
+                            width: 250,
+                            backgroundColor: '#fff',
+                          }}
+                          itemStyle={{
+                            backgroundColor: '#f5f5f5',
+                            paddingLeft: 10,
+                            paddingRight: 10,
+                            paddingBottom: 5,
+                            paddingTop: 5,
+                          }}
+                          itemTextStyle={{color: '#222'}}
+                          itemsContainerStyle={{maxHeight: 340}}
+                          textInputProps={{
+                            placeholder:
+                              this.state.selectedValueArr[i] !== 0
+                                ? this.state.selectedValueArr[i].name
+                                : 'Select ' +
+                                  this.props.questionData.question.label,
+                            underlineColorAndroid: 'transparent',
+                            style: {
+                              paddingTop: 5,
+                              paddingBottom: 5,
+                              paddingLeft: 10,
+                              paddingRight: 10,
+                            },
+                          }}
+                          placeholderTextColor={'#000'}
+                          // listProps={{
+                          //   nestedScrollEnabled: true,
+                          // }}
+                        />
                       </View>
                       <View style={localStyle.closeBlock}>
                         {i !== 0 && (
@@ -338,8 +369,8 @@ const localStyle = StyleSheet.create({
     alignSelf: 'center',
   },
   selectContainer: {
-    backgroundColor: Theme.base_color_10,
-    height: 40,
+    // backgroundColor: Theme.base_color_10,
+    // height: 40,
     justifyContent: 'center',
   },
   select: {
