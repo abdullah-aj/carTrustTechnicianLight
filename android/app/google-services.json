@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1086009462221",
+    "project_id": "cartrustappbiz-864de",
+    "storage_bucket": "cartrustappbiz-864de.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1086009462221:android:b8b3e845ef684b3aaf4884",
+        "android_client_info": {
+          "package_name": "com.cartrustappbiz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1086009462221-60um9dgscp1nljnso1i0kb7iq9c972ot.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGjiKoMhOrNBD_9VJq9f2VzK7BjFyxb0A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1086009462221-60um9dgscp1nljnso1i0kb7iq9c972ot.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

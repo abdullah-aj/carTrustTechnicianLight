@@ -1,0 +1,16 @@
+include ':alhamranimposlibrary'
+rootProject.name = 'cartrustappbiz'
+include ':react-native-firebase-mlkit'
+project(':react-native-firebase-mlkit').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-firebase-mlkit/android')
+include ':@terrylinla_react-native-sketch-canvas'
+project(':@terrylinla_react-native-sketch-canvas').projectDir = new File(rootProject.projectDir, '../node_modules/@terrylinla/react-native-sketch-canvas/android')
+include ':@terrylinla_react-native-sketch-canvas'
+project(':@terrylinla_react-native-sketch-canvas').projectDir = new File(rootProject.projectDir, '../node_modules/@terrylinla/react-native-sketch-canvas/android')
+include ':lottie-react-native'
+project(':lottie-react-native').projectDir = new File(rootProject.projectDir, '../node_modules/lottie-react-native/src/android')
+apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesSettingsGradle(settings)
+include ':app'
+include ':@react-native-community_cameraroll'
+project(':@react-native-community_cameraroll').projectDir = new File(rootProject.projectDir, 	'../node_modules/@react-native-community/cameraroll/android')
+include ':react-native-firebase-mlkit'
+project(':react-native-firebase-mlkit').projectDir = new File(rootProject.projectDir, 	'../node_modules/react-native-firebase-mlkit/android')
