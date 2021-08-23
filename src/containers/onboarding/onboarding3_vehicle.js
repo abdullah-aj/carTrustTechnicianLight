@@ -67,7 +67,24 @@ export default class Onboarding3Vehicle extends Component {
       });
       this.setState({isLoading: false});
       if (typeof res.data.Error === 'undefined') {
+        // VIN Found in DB
+        const propsData = {
+          customerInfo: this.customerInfo,
+          vehicleInfo: {
+            vin: res.data.vehicle.vin,
+            vehicleMake: res.data.vehicle.make,
+            vehicleType: res.data.vehicle.type,
+            vehicle: res.data.vehicle.model,
+            vehicleYear: res.data.vehicle.year.toString(),
+            plate: res.data.vehicle.plate_en,
+            registration: res.data.vehicle.registration.toString(),
+            mileage: res.data.vehicle.current_mileage.toString(),
+            color: res.data.vehicle.color,
+            id: res.data.vehicle.id,
+          },
+        };
         if (res.data.customer.id !== this.customerInfo.id) {
+          // Offer to Change Owner
           Message.alert(
             'Belongs to Different Customer',
             `VIN already associated with Vehicle of ${res.data.customer.first_name} ${res.data.customer.last_name}
@@ -84,28 +101,24 @@ Do You want to Change Ownership of Vehicle?`,
               {
                 text: 'Change Owner?',
                 onPress: () => {
-                  const formData = {
-                    customerInfo: this.customerInfo,
-                    vehicleInfo: {
-                      vin: res.data.vehicle.vin,
-                      vehicleMake: res.data.vehicle.make,
-                      vehicleType: res.data.vehicle.type,
-                      vehicle: res.data.vehicle.model,
-                      vehicleYear: res.data.vehicle.year.toString(),
-                      plate: res.data.vehicle.plate_en,
-                      registration: res.data.vehicle.registration.toString(),
-                      mileage: res.data.vehicle.current_mileage.toString(),
-                      color: res.data.vehicle.color,
-                      id: res.data.vehicle.id,
+                  const data = {
+                    ...propsData,
+                    mode: {
+                      action: 'updatePreCheck',
+                      navigateTo: 'profile',
+                      params: {
+                        id: this.customerInfo.id,
+                      },
                     },
                   };
-                  this.props.navigation.push('onboardingVehicleInfo', formData);
+                  this.props.navigation.push('onboardingVehicleInfo', data);
                 },
                 type: 'yes',
               },
             ],
           );
         } else {
+          // Offer to Update Existing Vehicle
           await Message.alert(
             'Vehicle Already Exist',
             `Vehicle with VIN ${values.vinScanField} already exist, 
@@ -123,22 +136,17 @@ Do you Want to Update this Vehicle?`,
               {
                 text: 'Update?',
                 onPress: () => {
-                  const formData = {
-                    customerInfo: this.customerInfo,
-                    vehicleInfo: {
-                      vin: res.data.vehicle.vin,
-                      vehicleMake: res.data.vehicle.make,
-                      vehicleType: res.data.vehicle.type,
-                      vehicle: res.data.vehicle.model,
-                      vehicleYear: res.data.vehicle.year.toString(),
-                      plate: res.data.vehicle.plate_en,
-                      registration: res.data.vehicle.registration.toString(),
-                      mileage: res.data.vehicle.current_mileage.toString(),
-                      color: res.data.vehicle.color,
-                      id: res.data.vehicle.id,
+                  const data = {
+                    ...propsData,
+                    mode: {
+                      action: 'updatePreCheck',
+                      navigateTo: 'profile',
+                      params: {
+                        id: this.customerInfo.id,
+                      },
                     },
                   };
-                  this.props.navigation.push('onboardingVehicleInfo', formData);
+                  this.props.navigation.push('onboardingVehicleInfo', data);
                 },
                 type: 'yes',
               },
@@ -146,6 +154,7 @@ Do you Want to Update this Vehicle?`,
           );
         }
       } else {
+        // VIN Not Found
         try {
           const response = await AP.Calls.VinNumber.SearchVinNumber({
             vinScanField: values.vinScanField,
@@ -155,10 +164,12 @@ Do you Want to Update this Vehicle?`,
             response.data.vehicle &&
             response.data.vehicle.vin
           ) {
+            // VIN API Responded with VIN Details
             console.log('customer id in step 3 is:::>', this.customerInfo.id);
             console.log('response from VIN is:', response.data.vehicle.vin);
 
-            const formData = {
+            this.setState({isLoading: false});
+            this.props.navigation.push('onboardingVehicleInfo', {
               customerInfo: this.customerInfo,
               vehicleInfo: {
                 vin: response.data.vehicle.vin,
@@ -167,10 +178,16 @@ Do you Want to Update this Vehicle?`,
                 vehicle: response.data.vehicle.model,
                 vehicleYear: response.data.vehicle.year.toString(),
               },
-            };
-            this.setState({isLoading: false});
-            this.props.navigation.push('onboardingVehicleInfo', formData);
+              mode: {
+                action: 'add',
+                navigateTo: 'profile',
+                params: {
+                  id: this.customerInfo.id,
+                },
+              },
+            });
           } else {
+            // VIN API Responded without VIN Details
             this.setState({isLoading: false});
             this.props.navigation.push('onboardingVehicleInfo', {
               customerInfo: this.customerInfo,
@@ -181,13 +198,17 @@ Do you Want to Update this Vehicle?`,
                 vehicle: '',
                 vehicleYear: '',
               },
+              mode: {
+                action: 'add',
+                navigateTo: 'profile',
+                params: {
+                  id: this.customerInfo.id,
+                },
+              },
             });
-            // Message.alert(
-            //   'Error',
-            //   'VIN API response is invalid, Please Contact Admin',
-            // );
           }
         } catch (e) {
+          // VIN API Error, but still continue
           console.log('Error :>> ', e);
           this.setState({isLoading: false});
           this.props.navigation.push('onboardingVehicleInfo', {
@@ -198,6 +219,13 @@ Do you Want to Update this Vehicle?`,
               vehicleType: '',
               vehicle: '',
               vehicleYear: '',
+            },
+            mode: {
+              action: 'add',
+              navigateTo: 'profile',
+              params: {
+                id: this.customerInfo.id,
+              },
             },
           });
           //Message.alert('Error', 'Server Error, Please try again');

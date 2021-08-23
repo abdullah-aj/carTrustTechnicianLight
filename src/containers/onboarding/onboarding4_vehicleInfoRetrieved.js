@@ -145,6 +145,7 @@ export default class Onboarding4_vehicleInfoRetrieved extends Component {
         },
         customerInfo: this.customerDetails,
         bookingInfo: this.bookingInfo ? this.bookingInfo : false,
+        mode: this.props.route.params.mode,
       });
     } catch (e) {
       console.log(e);

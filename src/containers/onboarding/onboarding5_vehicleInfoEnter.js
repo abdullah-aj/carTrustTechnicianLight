@@ -182,214 +182,176 @@ export class Onboarding5_vehicleInfoEnter extends Component {
       ' ' +
       PLATE_CHARACTERS[values.plateEN1];
 
-    if (this.bookingInfo.id) {
-      console.log('1111111111111111');
-      // Coming From Confirmation Page To UPDATE ONLY
+    const saveData = {
+      vinNumber: this.vehicleDetails.vin,
+      carMake: this.vehicleDetails.vehicleMake,
+      carYear: this.vehicleDetails.vehicleYear,
+      carType: this.vehicleDetails.vehicleType,
+      carModel: this.vehicleDetails.vehicle,
+      carPlateNo: plateAr + ' ' + numAR.join(''),
+      carPlateNoEn: plateEN + '' + values.plateNo,
+      carRegistration: values.regNo,
+      technicianId: this.props.getUserDetails.id,
+      customerId: this.customerDetails.id,
+      carColor: values.color,
+      carMileage: values.mileage,
+    };
+    const mode = this.props.route.params.mode;
+
+    if (mode.action === 'updatePreCheck') {
+      // VIN already Checked, Just save Data
+      this.handleUpdateVehicle({
+        ...saveData,
+        id: this.vehicleDetails.id,
+      });
+    } else if (mode.action === 'update') {
+      // Update After VIN Check
       try {
         const res = await AP.Calls.Vehicle.checkVinExist({
           vin: this.vehicleDetails.vin,
         });
         if (res.data.Error !== 'vin not found') {
-          if (res.data.customer !== this.customerDetails.id) {
+          // VIN Found in DB
+          if (res.data.vehicle.id !== this.vehicleDetails.id) {
+            // vin matched vehicle has a different id
             Message.alert(
-              'Belongs to Different Customer',
-              `VIN already associated with Vehicle of ${res.data.customer.first_name} ${res.data.customer.last_name}
-Do You want to Change Ownership of Vehicle?`,
+              'Error',
+              'VIN Associated with another vehicle. Please contact Admin to Update.',
               [
                 {
-                  text: 'Cancel',
+                  text: 'OK',
                   onPress: () =>
-                    props.navigation.push('confirmation', {
-                      bookingId: this.bookingInfo.id,
+                    this.props.navigation.push(mode.navigateTo, {
+                      ...mode.params,
                     }),
-                  type: 'No',
-                },
-                {
-                  text: 'Change Owner?',
-                  onPress: async () => {
-                    this.setState({isLoading: true});
-                    const response = await AP.Calls.Vehicle.UpdateVehicle({
-                      id: res.data.vehicle.id,
-                      vinNumber: this.vehicleDetails.vin,
-                      carMake: this.vehicleDetails.vehicleMake,
-                      carYear: this.vehicleDetails.vehicleYear,
-                      carType: this.vehicleDetails.vehicleType,
-                      carModel: this.vehicleDetails.vehicle,
-                      carPlateNo: plateAr + ' ' + numAR.join(''),
-                      carPlateNoEn: plateEN + '' + values.plateNo,
-                      carRegistration: values.regNo,
-                      technicianId: this.props.getUserDetails.id,
-                      customerId: this.customerDetails.id,
-                      carColor: values.color,
-                      carMileage: values.mileage,
-                    });
-                    if (response) {
-                      this.setState({isLoading: false});
-                      Alert.alert(
-                        'Yay!',
-                        'Vehicle has been Updated successfully.',
-                        [
-                          {
-                            text: 'Continue',
-                            onPress: () =>
-                              this.props.navigation.push('confirmation', {
-                                bookingId: this.bookingInfo.id,
-                              }),
-                          },
-                        ],
-                      );
-                    }
-                  },
                   type: 'yes',
                 },
               ],
             );
           } else {
-            if (this.vehicleDetails.id !== '') {
-              console.log('=>>>>>>>>>>>>>>>>>>>>>>>', this.vehicleDetails);
-              const response = await AP.Calls.Vehicle.UpdateVehicle({
-                id: res.data.vehicle.id,
-                vinNumber: this.vehicleDetails.vin,
-                carMake: this.vehicleDetails.vehicleMake,
-                carYear: this.vehicleDetails.vehicleYear,
-                carType: this.vehicleDetails.vehicleType,
-                carModel: this.vehicleDetails.vehicle,
-                carPlateNo: plateAr + ' ' + numAR.join(''),
-                carPlateNoEn: plateEN + '' + values.plateNo,
-                carRegistration: values.regNo,
-                technicianId: this.props.getUserDetails.id,
-                customerId: this.customerDetails.id,
-                carColor: values.color,
-                carMileage: values.mileage,
-              });
-              console.log('//response isss:::::>>', response);
-              if (response) {
-                this.setState({isLoading: false});
-                Message.alert(
-                  'Yay!',
-                  'Vehicle has been Updated successfully.',
-                  [
-                    {
-                      text: 'Continue',
-                      onPress: () =>
-                        this.props.navigation.push('confirmation', {
-                          bookingId: this.bookingInfo.id,
-                        }),
-                      type: 'yes',
+            // VIN belongs to same vehicle
+            if (res.data.customer.id !== this.customerDetails.id) {
+              // Offer to update Owner
+              Message.alert(
+                'Belongs to Different Customer',
+                `VIN already associated with Vehicle of ${res.data.customer.first_name} ${res.data.customer.last_name}
+  Do You want to Change Ownership of Vehicle?`,
+                [
+                  {
+                    text: 'Cancel',
+                    onPress: () =>
+                      this.props.navigation.push(mode.navigateTo, {
+                        ...mode.params,
+                      }),
+                    type: 'No',
+                  },
+                  {
+                    text: 'Change Owner?',
+                    onPress: async () => {
+                      this.handleUpdateVehicle({
+                        ...saveData,
+                        id: this.vehicleDetails.id,
+                      });
                     },
-                  ],
-                );
+                    type: 'yes',
+                  },
+                ],
+              );
+            } else {
+              // silent update
+              if (this.isEmpty(this.vehicleDetails.id)) {
+                Alert.alert('ERROR', 'Invalid action detected');
+                return;
               }
+              this.handleUpdateVehicle({
+                ...saveData,
+                id: this.vehicleDetails.id,
+              });
             }
           }
         } else {
-          // Just in Case, If VIN Not Found Then Add New Vehicle
-          try {
-            const response = await AP.Calls.Vehicle.AddVehicle({
-              vinNumber: this.vehicleDetails.vin,
-              carMake: this.vehicleDetails.vehicleMake,
-              carYear: this.vehicleDetails.vehicleYear,
-              carType: this.vehicleDetails.vehicleType,
-              carModel: this.vehicleDetails.vehicle,
-              carPlateNo: plateAr + ' ' + numAR.join(''),
-              carPlateNoEn: plateEN + '' + values.plateNo,
-              carRegistration: values.regNo,
-              technicianId: this.props.getUserDetails.id,
-              customerId: this.customerDetails.id,
-              carColor: values.color,
-              carMileage: values.mileage,
-            });
-            console.log('//response isss:::::>>', response);
-            if (response) {
-              this.setState({isLoading: false});
-              Message.alert('Yay!', 'Vehicle has been added successfully.', [
-                {
-                  text: 'Continue',
-                  onPress: () =>
-                    this.props.navigation.push('profile', {
-                      id: this.customerDetails.id,
-                    }),
-                  type: 'yes',
-                },
-              ]);
-            }
-          } catch (e) {
-            console.log('error:', e);
-          }
+          // VIN number is available. can be associated
+          this.handleUpdateVehicle({
+            ...saveData,
+            id: this.vehicleDetails.id,
+          });
         }
       } catch (e) {
         console.log(e);
       }
-    } else {
-      console.log('222222222222222');
-      console.log(this.bookingInfo);
-      console.log('----------------------------------');
-      // Normal Flow to add/update Vehicle
-      try {
-        if (this.vehicleDetails.id !== '') {
-          console.log('=>>>>>>>>>>>>>>>>>>>>>>>', this.vehicleDetails);
-          const response = await AP.Calls.Vehicle.UpdateVehicle({
-            id: this.vehicleDetails.id,
-            vinNumber: this.vehicleDetails.vin,
-            carMake: this.vehicleDetails.vehicleMake,
-            carYear: this.vehicleDetails.vehicleYear,
-            carType: this.vehicleDetails.vehicleType,
-            carModel: this.vehicleDetails.vehicle,
-            carPlateNo: plateAr + ' ' + numAR.join(''),
-            carPlateNoEn: plateEN + '' + values.plateNo,
-            carRegistration: values.regNo,
-            technicianId: this.props.getUserDetails.id,
-            customerId: this.customerDetails.id,
-            carColor: values.color,
-            carMileage: values.mileage,
-          });
-          console.log('//response isss:::::>>', response);
-          if (response) {
-            this.setState({isLoading: false});
-            Message.alert('Yay!', 'Vehicle has been Updated successfully.', [
-              {
-                text: 'Continue',
-                onPress: () =>
-                  this.props.navigation.push('profile', {
-                    id: this.customerDetails.id,
-                  }),
-                type: 'yes',
-              },
-            ]);
-          }
-        } else {
-          const response = await AP.Calls.Vehicle.AddVehicle({
-            vinNumber: this.vehicleDetails.vin,
-            carMake: this.vehicleDetails.vehicleMake,
-            carYear: this.vehicleDetails.vehicleYear,
-            carType: this.vehicleDetails.vehicleType,
-            carModel: this.vehicleDetails.vehicle,
-            carPlateNo: plateAr + ' ' + numAR.join(''),
-            carPlateNoEn: plateEN + '' + values.plateNo,
-            carRegistration: values.regNo,
-            technicianId: this.props.getUserDetails.id,
-            customerId: this.customerDetails.id,
-            carColor: values.color,
-            carMileage: values.mileage,
-          });
-          console.log('//response isss:::::>>', response);
-          if (response) {
-            this.setState({isLoading: false});
-            Message.alert('Yay!', 'Vehicle has been added successfully.', [
-              {
-                text: 'Continue',
-                onPress: () =>
-                  this.props.navigation.push('profile', {
-                    id: this.customerDetails.id,
-                  }),
-                type: 'yes',
-              },
-            ]);
-          }
-        }
-      } catch (e) {
-        console.log('error:', e);
+    } else if (mode.action === 'add') {
+      console.log('Should be Addd');
+      if (!this.isEmpty(this.vehicleDetails.id)) {
+        Alert.alert('ERROR', 'Invalid Action Detected');
+        return;
       }
+      this.handleAddVehicle(saveData);
+    } else {
+      Alert.alert('ERROR', 'No Action Detected');
+      return;
+    }
+  };
+
+  handleUpdateVehicle = async (data) => {
+    try {
+      this.setState({isLoading: true});
+      const response = await AP.Calls.Vehicle.UpdateVehicle(data);
+      if (response) {
+        this.setState({isLoading: false});
+        Message.alert('Yay!', 'Vehicle has been Updated successfully.', [
+          {
+            text: 'Continue',
+            onPress: () => {
+              const mode = this.props.route.params.mode;
+              this.props.navigation.push(mode.navigateTo, {
+                ...mode.params,
+              });
+            },
+            type: 'yes',
+          },
+        ]);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  handleAddVehicle = async (data) => {
+    try {
+      this.setState({isLoading: true});
+      const response = await AP.Calls.Vehicle.AddVehicle(data);
+      if (response) {
+        this.setState({isLoading: false});
+        Message.alert('Yay!', 'Vehicle has been added successfully.', [
+          {
+            text: 'Continue',
+            onPress: () => {
+              const mode = this.props.route.params.mode;
+              this.props.navigation.push(mode.navigateTo, {
+                ...mode.params,
+              });
+            },
+            type: 'yes',
+          },
+        ]);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  isEmpty = (value) => {
+    if (
+      typeof value === undefined ||
+      value === undefined ||
+      value === 'undefined' ||
+      value === null ||
+      value === 'null' ||
+      value === ''
+    ) {
+      return true;
+    } else {
+      return false;
     }
   };
 

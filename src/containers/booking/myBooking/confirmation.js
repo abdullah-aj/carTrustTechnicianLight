@@ -144,6 +144,13 @@ const Confirmation = (props: Props): any => {
                   status: booking.status,
                 },
                 bookingId: booking.booking_id,
+                mode: {
+                  action: 'update',
+                  navigateTo: 'confirmation',
+                  params: {
+                    bookingId: booking.booking_id,
+                  },
+                },
               });
             },
             type: 'yes',
