@@ -66,6 +66,7 @@ class FullPage extends React.Component<Props, State> {
           <ScrollView
             contentContainerStyle={style.scroller}
             scrollEnabled={scrollEnabled}
+            keyboardShouldPersistTaps="handled"
             // onContentSizeChange={this.handleContentSizeChange}
           >
             {this.props.title ? (
@@ -82,8 +83,7 @@ class FullPage extends React.Component<Props, State> {
             ) : (
               <></>
             )}
-            <View style={style.body}>{this.props.sectionBody}
-            </View>
+            <View style={style.body}>{this.props.sectionBody}</View>
           </ScrollView>
           <View style={style.footer}>
             <FooterLine />
