@@ -50,6 +50,7 @@ class RenderQuestion extends React.Component<Props, State> {
       return {
         id: item.id,
         name: item.title + ' - ' + item.description,
+        value: item.title,
       };
     });
     this.setState({
@@ -117,18 +118,11 @@ class RenderQuestion extends React.Component<Props, State> {
     }
   };
 
-  handleOptionSelection: function = async (
-    itemName,
-    itemId,
-    dropDownNumber,
-  ) => {
+  handleOptionSelection: function = async (itemObj, dropDownNumber) => {
     const arr = [...this.state.selectedValueArr];
-    arr[dropDownNumber] = {
-      id: itemId,
-      name: itemName,
-    };
+    arr[dropDownNumber] = itemObj;
 
-    if (itemId !== NO_FAULT) {
+    if (itemObj.id !== NO_FAULT) {
       if (this.state.disabled === true) {
         await this.setState({
           disabled: false,
@@ -249,13 +243,17 @@ class RenderQuestion extends React.Component<Props, State> {
                           items={
                             i === 0
                               ? [
-                                  {id: NO_FAULT, name: NO_FAULT},
+                                  {
+                                    id: NO_FAULT,
+                                    name: NO_FAULT,
+                                    value: NO_FAULT,
+                                  },
                                   ...this.state.dropdownItems,
                                 ]
                               : this.state.dropdownItems
                           }
                           onItemSelect={(item) => {
-                            this.handleOptionSelection(item.name, item.id, i);
+                            this.handleOptionSelection(item, i);
                           }}
                           selectedItems={
                             this.state.selectedValueArr[i] !== 0

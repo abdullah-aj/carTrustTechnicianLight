@@ -155,7 +155,7 @@ class TestQuestionODB extends React.Component<Props, State> {
       );
       return;
     } catch (e) {
-      console.log('Error :>>', e);
+      console.log('Error In Lottie Image :>> ', e);
     }
   };
 
